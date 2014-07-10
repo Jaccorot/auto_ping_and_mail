@@ -13,63 +13,60 @@ import string, os ,sys
 
 
 #### 配置服务器IP地址
-check_ip ={"192.168.1.200":0,}
+check_ip ={"100.0.0.86":0,"100.0.0.249":0,}
 #### 定义几次ping不通发邮件
 send_mail_limit = [3,10] 
-"""
 
-#### 发邮件的邮件服务器配置
-mail_host = 'smtp.163.com'
-mail_user = 'testing_007@163.com'
-mail_pwd = 'testing'
-mail_to = "wuxiaoning@dayang.com.cn"
-mail_cc = "testing_007@163.com"
-"""
-"""
-Get local settings
-"""
-def get_setting(file):
+class InitSetting(object):
+    '''
+    初始化本地设置
+    '''
+    def __init__(self,object):
 
-    cf = ConfigParser.ConfigParser()
-    cf.read(file)
-    mail_host = cf.get("mail","mail_host")
-    mail_user = cf.get("mail","mail_user")
-    mail_pwd = cf.get("mail","mail_pwd")
-    mail_to = cf.get("mail","mail_to")
-    mail_cc = cf.get("mail","mail_cc")
-"""
-#testing :
-
-    print mail_host
-    print mail_user
-    print mail_pwd
-    print mail_to
-    print mail_cc
-"""
-
-#####
-##发送模块
-#####
+        cf = ConfigParser.ConfigParser()
+        cf.read(object)
+        self.mail_host = cf.get("mail","mail_host")
+        self.mail_user = cf.get("mail","mail_user")
+        self.mail_pwd = cf.get("mail","mail_pwd")
+        self.mail_to = cf.get("mail","mail_to")
+        self.mail_cc = cf.get("mail","mail_cc")
  
-def mail_warn(error_ip):
+def mail_warn(error_ip,mail_address):
+    '''
+    发送模块
+    '''
     content = 'Ping IP %s is error!It\'s done.Hurry up to restart,Jiecao Wu' %error_ip
     msg = MIMEText(content)
-    msg['From'] = mail_user
+    msg['From'] = mail_address.mail_user
     msg['Subject'] = 'warnning %s'%error_ip
-    msg['To'] = mail_to
-    try:
-        s = smtplib.SMTP()
-        s.connect(mail_host)
-        s.login(mail_user,mail_pwd)
-        s.sendmail(mail_user,[mail_to,mail_cc],msg.as_string())
-        s.close()
-    except Exception ,e:
-        print e
+    msg['To'] = mail_address.mail_to
+
+    if error_ip == '100.0.0.86':
+        try:
+            s = smtplib.SMTP()
+            s.connect(mail_address.mail_host)
+            s.login(mail_address.mail_user,mail_address.mail_pwd)
+            s.sendmail(mail_address.mail_user,[mail_address.mail_to,mail_address.mail_cc],msg.as_string())
+            s.close()
+        except Exception ,e:
+            print e
+
+    if error_ip != '100.0.0.86':
+        try:
+            s = smtplib.SMTP()
+            s.connect(mail_address.mail_host)
+            s.login(mail_address.mail_user,mail_address.mail_pwd)
+            s.sendmail(mail_address.mail_user,[mail_address.mail_cc,mail_address.mail_cc],msg.as_string())
+            s.close()
+        except Exception ,e:
+            print e
+
  
- #####
- ##检测模块
- #####
+
 def check(get_ip):
+    '''
+    检测模块
+    '''
     try :
         ping=pexpect.spawn("ping -c1 %s" % (get_ip))
         check_result =ping.expect(["Request","(?i)time=",pexpect.EOF, pexpect.TIMEOUT],)
@@ -78,27 +75,21 @@ def check(get_ip):
     return check_result
  
 
-#####
-##主程序
-#####
 def main():
-##  try_num=1
-    get_setting("setting.ini")
+    mail_address = InitSetting("setting.ini")
     while True :
         for i in check_ip:
-##          print try_num
             check_status = check("%s"%i)
-##          print check_status
-##          try_num+=1
             if check_status == 1:
                 check_ip["%s"%i] = 0
             else :
                 check_ip["%s"%i] +=1
-            if check_ip["%s"%i] in send_mail_limit :
-                mail_warn("%s"%i)
 
-##              print "once over"
-        time.sleep(10)
+            if check_ip["%s"%i] in send_mail_limit :
+                mail_warn(i,mail_address)
+        time.sleep(60)
+
+
  
 if __name__ == "__main__":
     main()
