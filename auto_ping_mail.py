@@ -17,19 +17,47 @@ check_ip ={"100.0.0.86":0,"100.0.0.249":0,}
 #### 定义几次ping不通发邮件
 send_mail_limit = [3,10] 
 
-class InitSetting(object):
+class InitSetting(file_name):
     '''
     初始化本地设置
     '''
-    def __init__(self,object):
-
+    def __init__(self,file_name):
+        self.file_name = file_name
+        self.cf = None
         cf = ConfigParser.ConfigParser()
-        cf.read(object)
-        self.mail_host = cf.get("mail","mail_host")
-        self.mail_user = cf.get("mail","mail_user")
-        self.mail_pwd = cf.get("mail","mail_pwd")
-        self.mail_to = cf.get("mail","mail_to")
-        self.mail_cc = cf.get("mail","mail_cc")
+        self._mail_host = " "
+        self._mail_user = " "
+        self._mail_pwd =  " "
+        self._mail_to = " "
+        self._mail_cc = " "
+        
+
+
+    def loading_ini(self):
+        if not cf:
+            cf = ConfigParser.ConfigParser()
+        cf.read(self.file_name)
+        self._mail_host = cf.get("mail","mail_host")
+        self._mail_user = cf.get("mail","mail_user")
+        self._mail_pwd = cf.get("mail","mail_pwd")
+        self._mail_to = cf.get("mail","mail_to")
+        self._mail_cc = cf.get("mail","mail_cc")
+
+
+    def mail_host(self):
+        return self._mail_host
+
+    def mail_user(self):
+        return self._mail_user
+
+    def mail_pwd(self):
+        return self._mail_pwd
+
+    def mail_to(self):
+        return self._mail_to
+
+    def mail_cc(self):
+        return self._mail_cc
  
 def mail_warn(error_ip,mail_address):
     '''
@@ -77,6 +105,7 @@ def check(get_ip):
 
 def main():
     mail_address = InitSetting("setting.ini")
+    mail_address.loading_ini
     while True :
         for i in check_ip:
             check_status = check("%s"%i)
